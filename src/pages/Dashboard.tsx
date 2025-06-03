@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +14,13 @@ import {
   Activity,
   Eye
 } from 'lucide-react';
+import { ReportsModal } from '@/components/dashboard/ReportsModal';
+import { LiveMonitoringModal } from '@/components/dashboard/LiveMonitoringModal';
 
 const Dashboard = () => {
+  const [showReports, setShowReports] = useState(false);
+  const [showLiveMonitoring, setShowLiveMonitoring] = useState(false);
+
   // Mock veriler
   const stats = {
     totalHives: 24,
@@ -47,11 +51,14 @@ const Dashboard = () => {
           <p className="text-gray-600">Arı kovanlarınızın genel durumu</p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowReports(true)}>
             <Eye className="mr-2 h-4 w-4" />
             Raporları Görüntüle
           </Button>
-          <Button className="gradient-honey text-white">
+          <Button 
+            className="gradient-honey text-white"
+            onClick={() => setShowLiveMonitoring(true)}
+          >
             <Activity className="mr-2 h-4 w-4" />
             Canlı İzle
           </Button>
@@ -251,6 +258,17 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <ReportsModal 
+        isOpen={showReports}
+        onClose={() => setShowReports(false)}
+      />
+      
+      <LiveMonitoringModal 
+        isOpen={showLiveMonitoring}
+        onClose={() => setShowLiveMonitoring(false)}
+      />
     </div>
   );
 };
