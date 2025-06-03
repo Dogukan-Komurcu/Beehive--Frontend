@@ -19,16 +19,27 @@ import {
   Droplets,
   Battery,
   Calendar,
-  Filter
+  Filter,
+  SortAsc,
+  SortDesc,
+  Download,
+  Upload
 } from 'lucide-react';
+import { HiveDetailModal } from '@/components/dashboard/HiveDetailModal';
+import { EditHiveModal } from '@/components/dashboard/EditHiveModal';
 
 const Hives = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedHive, setSelectedHive] = useState<any>(null);
   const { toast } = useToast();
 
-  // Mock veriler
+  // Mock veriler - expanded with more hives
   const [hives, setHives] = useState([
     {
       id: 1,
@@ -94,15 +105,78 @@ const Hives = () => {
       lastUpdate: '3 dk önce',
       installDate: '2024-02-25',
       beeCount: 41000
+    },
+    {
+      id: 6,
+      name: 'Kovan-006',
+      location: 'Trabzon Yayla',
+      coordinates: '41.0015, 39.7178',
+      status: 'active',
+      temperature: 31,
+      humidity: 72,
+      battery: 88,
+      lastUpdate: '4 dk önce',
+      installDate: '2024-03-10',
+      beeCount: 43000
+    },
+    {
+      id: 7,
+      name: 'Kovan-007',
+      location: 'Muğla Orman',
+      coordinates: '37.2153, 28.3636',
+      status: 'warning',
+      temperature: 39,
+      humidity: 42,
+      battery: 25,
+      lastUpdate: '8 dk önce',
+      installDate: '2024-01-30',
+      beeCount: 38000
+    },
+    {
+      id: 8,
+      name: 'Kovan-008',
+      location: 'Samsun Kıyı',
+      coordinates: '41.2928, 36.3313',
+      status: 'active',
+      temperature: 29,
+      humidity: 75,
+      battery: 91,
+      lastUpdate: '1 dk önce',
+      installDate: '2024-02-15',
+      beeCount: 46000
     }
   ]);
 
-  const filteredHives = hives.filter(hive => {
-    const matchesSearch = hive.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         hive.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || hive.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  const filteredAndSortedHives = hives
+    .filter(hive => {
+      const matchesSearch = hive.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           hive.location.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = filterStatus === 'all' || hive.status === filterStatus;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      let compareValue = 0;
+      switch (sortBy) {
+        case 'name':
+          compareValue = a.name.localeCompare(b.name);
+          break;
+        case 'location':
+          compareValue = a.location.localeCompare(b.location);
+          break;
+        case 'temperature':
+          compareValue = a.temperature - b.temperature;
+          break;
+        case 'battery':
+          compareValue = a.battery - b.battery;
+          break;
+        case 'beeCount':
+          compareValue = a.beeCount - b.beeCount;
+          break;
+        default:
+          compareValue = 0;
+      }
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
 
   const handleAddHive = () => {
     toast({
@@ -112,11 +186,39 @@ const Hives = () => {
     setShowAddModal(false);
   };
 
+  const handleEditHive = (updatedHive: any) => {
+    setHives(prev => prev.map(h => h.id === updatedHive.id ? updatedHive : h));
+  };
+
   const handleDeleteHive = (id: number) => {
     setHives(hives.filter(hive => hive.id !== id));
     toast({
       title: "Kovan silindi",
       description: "Kovan başarıyla sistemden kaldırıldı.",
+    });
+  };
+
+  const handleViewDetails = (hive: any) => {
+    setSelectedHive(hive);
+    setShowDetailModal(true);
+  };
+
+  const handleEditClick = (hive: any) => {
+    setSelectedHive(hive);
+    setShowEditModal(true);
+  };
+
+  const handleExportData = () => {
+    toast({
+      title: "Veriler dışa aktarılıyor",
+      description: "Kovan verileri CSV formatında indiriliyor...",
+    });
+  };
+
+  const handleImportData = () => {
+    toast({
+      title: "Veri içe aktarma",
+      description: "Dosya seçimi açılıyor...",
     });
   };
 
@@ -146,51 +248,61 @@ const Hives = () => {
           <h1 className="text-3xl font-bold text-gray-900">Kovanlar</h1>
           <p className="text-gray-600">Tüm arı kovanlarınızı yönetin</p>
         </div>
-        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-          <DialogTrigger asChild>
-            <Button className="gradient-honey text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              Yeni Kovan Ekle
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Yeni Kovan Ekle</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Kovan Adı</Label>
-                <Input id="name" placeholder="Kovan-006" />
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={handleExportData}>
+            <Download className="mr-2 h-4 w-4" />
+            Dışa Aktar
+          </Button>
+          <Button variant="outline" onClick={handleImportData}>
+            <Upload className="mr-2 h-4 w-4" />
+            İçe Aktar
+          </Button>
+          <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+            <DialogTrigger asChild>
+              <Button className="gradient-honey text-white">
+                <Plus className="mr-2 h-4 w-4" />
+                Yeni Kovan Ekle
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Yeni Kovan Ekle</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Kovan Adı</Label>
+                  <Input id="name" placeholder="Kovan-009" />
+                </div>
+                <div>
+                  <Label htmlFor="location">Konum</Label>
+                  <Input id="location" placeholder="İstanbul Çiftlik" />
+                </div>
+                <div>
+                  <Label htmlFor="coordinates">Koordinatlar</Label>
+                  <Input id="coordinates" placeholder="41.0082, 28.9784" />
+                </div>
+                <div>
+                  <Label htmlFor="beeCount">Tahmini Arı Sayısı</Label>
+                  <Input id="beeCount" type="number" placeholder="40000" />
+                </div>
+                <div className="flex space-x-2">
+                  <Button onClick={handleAddHive} className="flex-1 gradient-honey text-white">
+                    Ekle
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowAddModal(false)} className="flex-1">
+                    İptal
+                  </Button>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="location">Konum</Label>
-                <Input id="location" placeholder="İstanbul Çiftlik" />
-              </div>
-              <div>
-                <Label htmlFor="coordinates">Koordinatlar</Label>
-                <Input id="coordinates" placeholder="41.0082, 28.9784" />
-              </div>
-              <div>
-                <Label htmlFor="beeCount">Tahmini Arı Sayısı</Label>
-                <Input id="beeCount" type="number" placeholder="40000" />
-              </div>
-              <div className="flex space-x-2">
-                <Button onClick={handleAddHive} className="flex-1 gradient-honey text-white">
-                  Ekle
-                </Button>
-                <Button variant="outline" onClick={() => setShowAddModal(false)} className="flex-1">
-                  İptal
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Filters */}
+      {/* Enhanced Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -202,9 +314,9 @@ const Hives = () => {
                 />
               </div>
             </div>
-            <div className="sm:w-48">
+            <div className="flex flex-wrap gap-2">
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
+                <SelectTrigger className="w-40">
                   <Filter className="mr-2 h-4 w-4" />
                   <SelectValue />
                 </SelectTrigger>
@@ -215,6 +327,27 @@ const Hives = () => {
                   <SelectItem value="offline">Çevrimdışı</SelectItem>
                 </SelectContent>
               </Select>
+              
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Sırala" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Ada Göre</SelectItem>
+                  <SelectItem value="location">Konuma Göre</SelectItem>
+                  <SelectItem value="temperature">Sıcaklığa Göre</SelectItem>
+                  <SelectItem value="battery">Bataryaya Göre</SelectItem>
+                  <SelectItem value="beeCount">Arı Sayısına Göre</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              >
+                {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -256,7 +389,7 @@ const Hives = () => {
 
       {/* Hives Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredHives.map((hive) => (
+        {filteredAndSortedHives.map((hive) => (
           <Card key={hive.id} className="card-hover">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -314,11 +447,21 @@ const Hives = () => {
 
               {/* Actions */}
               <div className="flex space-x-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleViewDetails(hive)}
+                >
                   <Eye className="mr-1 h-3 w-3" />
                   Detay
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleEditClick(hive)}
+                >
                   <Edit className="mr-1 h-3 w-3" />
                   Düzenle
                 </Button>
@@ -337,7 +480,7 @@ const Hives = () => {
         ))}
       </div>
 
-      {filteredHives.length === 0 && (
+      {filteredAndSortedHives.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center">
             <div className="text-6xl mb-4">🔍</div>
@@ -351,6 +494,20 @@ const Hives = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modals */}
+      <HiveDetailModal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        hive={selectedHive}
+      />
+
+      <EditHiveModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        hive={selectedHive}
+        onSave={handleEditHive}
+      />
     </div>
   );
 };
