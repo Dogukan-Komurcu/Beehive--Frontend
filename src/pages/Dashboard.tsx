@@ -16,10 +16,14 @@ import {
 } from 'lucide-react';
 import { ReportsModal } from '@/components/dashboard/ReportsModal';
 import { LiveMonitoringModal } from '@/components/dashboard/LiveMonitoringModal';
+import { AllHivesModal } from '@/components/dashboard/AllHivesModal';
+import { AllAlertsModal } from '@/components/dashboard/AllAlertsModal';
 
 const Dashboard = () => {
   const [showReports, setShowReports] = useState(false);
   const [showLiveMonitoring, setShowLiveMonitoring] = useState(false);
+  const [showAllHives, setShowAllHives] = useState(false);
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
 
   // Mock veriler
   const stats = {
@@ -183,7 +187,7 @@ const Dashboard = () => {
               ))}
             </div>
             <div className="mt-4 text-center">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={() => setShowAllHives(true)}>
                 Tüm Kovanları Görüntüle
               </Button>
             </div>
@@ -219,7 +223,7 @@ const Dashboard = () => {
               ))}
             </div>
             <div className="mt-4">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={() => setShowAllAlerts(true)}>
                 Tüm Uyarıları Görüntüle
               </Button>
             </div>
@@ -268,6 +272,16 @@ const Dashboard = () => {
       <LiveMonitoringModal 
         isOpen={showLiveMonitoring}
         onClose={() => setShowLiveMonitoring(false)}
+      />
+
+      <AllHivesModal 
+        isOpen={showAllHives}
+        onClose={() => setShowAllHives(false)}
+      />
+
+      <AllAlertsModal 
+        isOpen={showAllAlerts}
+        onClose={() => setShowAllAlerts(false)}
       />
     </div>
   );
