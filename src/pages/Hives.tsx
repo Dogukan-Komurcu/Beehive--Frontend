@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,7 @@ import {
 } from 'lucide-react';
 import { HiveDetailModal } from '@/components/dashboard/HiveDetailModal';
 import { EditHiveModal } from '@/components/dashboard/EditHiveModal';
+import { AddHiveWithMapModal } from '@/components/dashboard/AddHiveWithMapModal';
 
 const Hives = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -178,12 +178,12 @@ const Hives = () => {
       return sortOrder === 'asc' ? compareValue : -compareValue;
     });
 
-  const handleAddHive = () => {
+  const handleAddHive = (newHive: any) => {
+    setHives(prev => [...prev, newHive]);
     toast({
       title: "Başarılı!",
-      description: "Yeni kovan eklendi.",
+      description: "Yeni kovan harita ile eklendi.",
     });
-    setShowAddModal(false);
   };
 
   const handleEditHive = (updatedHive: any) => {
@@ -257,45 +257,13 @@ const Hives = () => {
             <Upload className="mr-2 h-4 w-4" />
             İçe Aktar
           </Button>
-          <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-            <DialogTrigger asChild>
-              <Button className="gradient-honey text-white">
-                <Plus className="mr-2 h-4 w-4" />
-                Yeni Kovan Ekle
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Yeni Kovan Ekle</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Kovan Adı</Label>
-                  <Input id="name" placeholder="Kovan-009" />
-                </div>
-                <div>
-                  <Label htmlFor="location">Konum</Label>
-                  <Input id="location" placeholder="İstanbul Çiftlik" />
-                </div>
-                <div>
-                  <Label htmlFor="coordinates">Koordinatlar</Label>
-                  <Input id="coordinates" placeholder="41.0082, 28.9784" />
-                </div>
-                <div>
-                  <Label htmlFor="beeCount">Tahmini Arı Sayısı</Label>
-                  <Input id="beeCount" type="number" placeholder="40000" />
-                </div>
-                <div className="flex space-x-2">
-                  <Button onClick={handleAddHive} className="flex-1 gradient-honey text-white">
-                    Ekle
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowAddModal(false)} className="flex-1">
-                    İptal
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            className="gradient-honey text-white"
+            onClick={() => setShowAddModal(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Yeni Kovan Ekle
+          </Button>
         </div>
       </div>
 
@@ -507,6 +475,12 @@ const Hives = () => {
         onClose={() => setShowEditModal(false)}
         hive={selectedHive}
         onSave={handleEditHive}
+      />
+
+      <AddHiveWithMapModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddHive}
       />
     </div>
   );
