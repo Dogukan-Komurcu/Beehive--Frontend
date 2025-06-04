@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { UserDetailModal } from '@/components/admin/UserDetailModal';
 import { 
   Shield, 
   Users, 
@@ -23,7 +25,12 @@ import {
   Lock,
   Unlock,
   Crown,
-  Search
+  Search,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  MoreVertical
 } from 'lucide-react';
 
 const Admin = () => {
@@ -31,6 +38,10 @@ const Admin = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [selectedUserRole, setSelectedUserRole] = useState('all');
 
   // Admin kontrolü
   if (!user || user.email !== 'sudolens@gmail.com') {
@@ -47,8 +58,84 @@ const Admin = () => {
     );
   }
 
+  // Mock users data
+  const allUsers = [
+    {
+      id: 1,
+      name: 'Ahmet Yılmaz',
+      email: 'ahmet@example.com',
+      phone: '+90 532 123 4567',
+      role: 'admin',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
+      lastActive: '2 dakika önce',
+      status: 'online',
+      joinDate: '15 Mart 2024',
+      location: 'Ankara, Türkiye',
+      hivesManaged: 12
+    },
+    {
+      id: 2,
+      name: 'Fatma Demir',
+      email: 'fatma@example.com',
+      phone: '+90 532 987 6543',
+      role: 'observer',
+      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face',
+      lastActive: '1 saat önce',
+      status: 'offline',
+      joinDate: '8 Nisan 2024',
+      location: 'İstanbul, Türkiye',
+      hivesManaged: 6
+    },
+    {
+      id: 3,
+      name: 'Mehmet Kaya',
+      email: 'mehmet@example.com',
+      phone: '+90 532 456 7890',
+      role: 'observer',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
+      lastActive: '3 saat önce',
+      status: 'offline',
+      joinDate: '22 Şubat 2024',
+      location: 'İzmir, Türkiye',
+      hivesManaged: 8
+    },
+    {
+      id: 4,
+      name: 'Ayşe Özkan',
+      email: 'ayse@example.com',
+      phone: '+90 532 321 6547',
+      role: 'admin',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
+      lastActive: '1 gün önce',
+      status: 'offline',
+      joinDate: '5 Ocak 2024',
+      location: 'Antalya, Türkiye',
+      hivesManaged: 15
+    },
+    {
+      id: 5,
+      name: 'Can Özdemir',
+      email: 'can@example.com',
+      phone: '+90 532 111 2233',
+      role: 'observer',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=32&h=32&fit=crop&crop=face',
+      lastActive: '2 gün önce',
+      status: 'offline',
+      joinDate: '10 Mayıs 2024',
+      location: 'Bursa, Türkiye',
+      hivesManaged: 4
+    }
+  ];
+
+  const filteredUsers = allUsers.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(userSearchTerm.toLowerCase());
+    const matchesRole = selectedUserRole === 'all' || user.role === selectedUserRole;
+    return matchesSearch && matchesRole;
+  });
+
   const adminStats = {
-    totalUsers: 156,
+    totalUsers: allUsers.length,
     activeHives: 89,
     totalAlerts: 23,
     systemHealth: 98.5,
@@ -82,6 +169,11 @@ const Admin = () => {
       title: "Kullanıcı İşlemi",
       description: `${action} işlemi gerçekleştirildi.`,
     });
+  };
+
+  const handleUserSelect = (selectedUser: any) => {
+    setSelectedUser(selectedUser);
+    setUserDetailModalOpen(true);
   };
 
   const tabs = [
@@ -317,6 +409,177 @@ const Admin = () => {
         </div>
       )}
 
+      {/* Users Tab */}
+      {selectedTab === 'users' && (
+        <div className="space-y-6">
+          {/* Search and Filter */}
+          <Card className="card-premium">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Kullanıcı ara..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="pl-10 bg-gray-50 border-gray-200 focus:bg-white"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  {[
+                    { value: 'all', label: 'Tümü' },
+                    { value: 'admin', label: 'Yöneticiler' },
+                    { value: 'observer', label: 'Gözlemciler' }
+                  ].map((filter) => (
+                    <Button
+                      key={filter.value}
+                      size="sm"
+                      variant={selectedUserRole === filter.value ? "default" : "outline"}
+                      onClick={() => setSelectedUserRole(filter.value)}
+                      className={selectedUserRole === filter.value ? "bg-red-600 hover:bg-red-700 text-white" : ""}
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Users List */}
+          <Card className="card-premium">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Users className="mr-3 h-6 w-6 text-blue-600" />
+                Kullanıcı Listesi ({filteredUsers.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredUsers.map((user, index) => (
+                  <div 
+                    key={user.id}
+                    className="p-6 bg-gradient-to-r from-white to-gray-50/50 rounded-xl border-2 border-gray-100 hover:border-red-200 transition-all duration-500 animate-slide-in-up hover-scale group cursor-pointer"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                    onClick={() => handleUserSelect(user)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4 flex-1">
+                        <div className="relative">
+                          <Avatar className="h-16 w-16 border-4 border-white shadow-lg">
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback className="gradient-honey text-white text-lg font-bold">
+                              {user.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className={`absolute -bottom-1 -right-1 w-5 h-5 ${user.status === 'online' ? 'bg-green-500' : 'bg-gray-400'} rounded-full border-2 border-white`}></div>
+                        </div>
+                        
+                        <div className="flex-1 space-y-3">
+                          <div>
+                            <h4 className="text-xl font-bold text-gray-900 group-hover:text-gradient transition-all duration-500">
+                              {user.name}
+                            </h4>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <div className="flex items-center text-gray-600">
+                                <Mail className="w-4 h-4 mr-1" />
+                                <span className="text-sm">{user.email}</span>
+                              </div>
+                              <div className="flex items-center text-gray-600">
+                                <Phone className="w-4 h-4 mr-1" />
+                                <span className="text-sm">{user.phone}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-6 text-sm text-gray-600">
+                            <div className="flex items-center">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              {user.location}
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              {user.joinDate}
+                            </div>
+                            <div className="flex items-center">
+                              <Shield className="w-4 h-4 mr-1" />
+                              {user.hivesManaged} Kovan
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Badge 
+                              variant="outline" 
+                              className={user.role === 'admin' 
+                                ? 'gradient-honey text-white border-0' 
+                                : 'bg-blue-100 text-blue-800 border-blue-200'
+                              }
+                            >
+                              {user.role === 'admin' ? (
+                                <><Crown className="w-3 h-3 mr-1" /> Yönetici</>
+                              ) : (
+                                <><Eye className="w-3 h-3 mr-1" /> Gözlemci</>
+                              )}
+                            </Badge>
+                            <Badge 
+                              variant="outline" 
+                              className={user.status === 'online' 
+                                ? 'bg-green-100 text-green-800 border-green-200' 
+                                : 'bg-gray-100 text-gray-800 border-gray-200'
+                              }
+                            >
+                              {user.status === 'online' ? 'Çevrimiçi' : 'Çevrimdışı'}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-gray-500">{user.lastActive}</p>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="hover:bg-blue-50 hover:border-blue-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUserAction('Düzenleme', user.id);
+                            }}
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Düzenle
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="hover:bg-red-50 hover:border-red-300 text-red-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUserAction('Silme', user.id);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {filteredUsers.length === 0 && (
+                <div className="text-center py-12">
+                  <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg">Aradığınız kriterlere uygun kullanıcı bulunamadı</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* System Settings Tab */}
       {selectedTab === 'system' && (
         <Card className="card-premium">
@@ -345,8 +608,8 @@ const Admin = () => {
         </Card>
       )}
 
-      {/* Other tabs content can be added here */}
-      {selectedTab !== 'overview' && selectedTab !== 'system' && (
+      {/* Other tabs content */}
+      {selectedTab !== 'overview' && selectedTab !== 'system' && selectedTab !== 'users' && (
         <Card className="card-premium">
           <CardContent className="p-12 text-center">
             <div className="text-6xl mb-4">🚧</div>
@@ -355,6 +618,13 @@ const Admin = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* User Detail Modal */}
+      <UserDetailModal
+        open={userDetailModalOpen}
+        onClose={() => setUserDetailModalOpen(false)}
+        user={selectedUser}
+      />
     </div>
   );
 };
