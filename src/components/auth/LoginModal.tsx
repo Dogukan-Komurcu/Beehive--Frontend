@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Crown } from 'lucide-react';
 
 interface LoginModalProps {
   open: boolean;
@@ -45,6 +45,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleAdminLogin = () => {
+    setEmail('sudolens@gmail.com');
+    setPassword('123456');
   };
 
   return (
@@ -110,11 +115,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
             </Button>
           </div>
           
-          <div className="border-t pt-4">
+          <div className="border-t pt-4 space-y-3">
+            <Button
+              type="button"
+              onClick={handleAdminLogin}
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+              disabled={isLoading}
+            >
+              <Crown className="mr-2 h-4 w-4" />
+              Admin Girişi
+            </Button>
+            
             <div className="text-xs text-gray-500 bg-amber-50 p-3 rounded">
               <strong>Test için:</strong><br />
-              Admin: admin@test.com<br />
-              Gözlemci: user@test.com<br />
+              <strong className="text-red-600">Admin:</strong> sudolens@gmail.com (Şifre: 123456)<br />
+              Normal: admin@test.com / user@test.com<br />
               Şifre: herhangi bir şifre
             </div>
           </div>

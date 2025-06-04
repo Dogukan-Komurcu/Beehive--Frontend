@@ -51,6 +51,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    // Admin özel giriş kontrolü
+    if (email === 'sudolens@gmail.com' && password === '123456') {
+      const adminUser: User = {
+        id: 'admin-1',
+        name: 'Süper Admin',
+        email: email,
+        role: 'admin',
+        avatar: `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face`
+      };
+      setUser(adminUser);
+      localStorage.setItem('user', JSON.stringify(adminUser));
+      setIsLoading(false);
+      return;
+    }
+    
     const mockUser: User = {
       id: '1',
       name: 'Admin User',
