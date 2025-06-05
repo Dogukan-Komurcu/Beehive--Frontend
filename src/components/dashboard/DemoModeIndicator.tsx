@@ -6,16 +6,22 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Clock, UserPlus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const DemoModeIndicator = () => {
   const { isDemoMode, logout } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   if (!isDemoMode) return null;
 
   const handleRegister = () => {
     logout();
     navigate('/');
+    toast({
+      title: "Demo Modundan Çıkıldı",
+      description: "Kayıt olmak için ana sayfaya yönlendirildiniz.",
+    });
   };
 
   return (

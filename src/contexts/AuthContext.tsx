@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
 
 interface User {
   id: string;
@@ -44,30 +45,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isDemoMode = user?.isDemo || false;
 
   useEffect(() => {
-    // Simulate checking for existing session
+    // Check for existing session
+    const token = localStorage.getItem('authToken');
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      
-      // If it's a demo user, check if session is still valid
-      if (parsedUser.isDemo) {
-        const demoLoginTime = localStorage.getItem('demoLoginTime');
-        if (demoLoginTime) {
-          const thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
-          const timeElapsed = Date.now() - parseInt(demoLoginTime);
-          
-          if (timeElapsed >= thirtyMinutes) {
-            // Demo session expired
-            logout();
-          } else {
-            // Set timeout for remaining time
-            const remainingTime = thirtyMinutes - timeElapsed;
-            startDemoSessionTimeout(remainingTime);
+    
+    if (token && storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        
+        // If it's a demo user, check if session is still valid
+        if (parsedUser.isDemo) {
+          const demoLoginTime = localStorage.getItem('demoLoginTime');
+          if (demoLoginTime) {
+            const thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
+            const timeElapsed = Date.now() - parseInt(demoLoginTime);
+            
+            if (timeElapsed >= thirtyMinutes) {
+              // Demo session expired
+              logout();
+            } else {
+              // Set timeout for remaining time
+              const remainingTime = thirtyMinutes - timeElapsed;
+              startDemoSessionTimeout(remainingTime);
+            }
           }
         }
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        logout();
       }
     }
+    
     setIsLoading(false);
   }, []);
 
@@ -78,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const timeout = setTimeout(() => {
       logout();
-      // You could show a toast here about demo session expiry
+      // Show notification about demo session expiry
     }, duration);
     
     setDemoSessionTimeout(timeout);
@@ -86,76 +95,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Admin özel giriş kontrolü
-    if (email === 'sudolens@gmail.com' && password === '123456') {
-      const adminUser: User = {
-        id: 'admin-1',
-        name: 'Süper Admin',
-        email: email,
-        role: 'admin',
-        avatar: `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face`
-      };
-      setUser(adminUser);
-      localStorage.setItem('user', JSON.stringify(adminUser));
+    try {
+      const response = await apiService.login({ email, password });
+      const { user: userData, token } = response;
+      
+      setUser(userData);
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
       setIsLoading(false);
-      return;
     }
-    
-    const mockUser: User = {
-      id: '1',
-      name: 'Admin User',
-      email: email,
-      role: email.includes('admin') ? 'admin' : 'observer',
-      avatar: `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face`
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    setIsLoading(false);
   };
 
   const loginAsDemo = async () => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const demoUser: User = {
-      id: 'demo-user',
-      name: 'Demo Kullanıcı',
-      email: 'demo@example.com',
-      role: 'demo',
-      isDemo: true,
-      avatar: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face`
-    };
-    
-    setUser(demoUser);
-    localStorage.setItem('user', JSON.stringify(demoUser));
-    localStorage.setItem('demoLoginTime', Date.now().toString());
-    
-    // Start 30-minute session timeout
-    startDemoSessionTimeout(30 * 60 * 1000); // 30 minutes
-    
-    setIsLoading(false);
+    try {
+      // For demo mode, we can either call the backend or use local demo data
+      const demoUser: User = {
+        id: 'demo-user',
+        name: 'Demo Kullanıcı',
+        email: 'demo@example.com',
+        role: 'demo',
+        isDemo: true,
+        avatar: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face`
+      };
+      
+      setUser(demoUser);
+      localStorage.setItem('user', JSON.stringify(demoUser));
+      localStorage.setItem('demoLoginTime', Date.now().toString());
+      
+      // Start 30-minute session timeout
+      startDemoSessionTimeout(30 * 60 * 1000); // 30 minutes
+    } catch (error) {
+      console.error('Demo login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (data: RegisterData) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: data.name,
-      email: data.email,
-      role: 'observer'
-    };
-    
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    setIsLoading(false);
+    try {
+      const response = await apiService.register(data);
+      const { user: userData, token } = response;
+      
+      setUser(userData);
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
@@ -165,6 +161,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     setUser(null);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     localStorage.removeItem('demoLoginTime');
   };
