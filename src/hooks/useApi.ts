@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiService } from '@/services/api';
 
 export function useApi<T>(
@@ -10,33 +10,33 @@ export function useApi<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     let isMounted = true;
 
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await apiCall();
-        if (isMounted) {
-          setData(result);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'An error occurred');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await apiCall();
+      if (isMounted) {
+        setData(result);
       }
-    };
-
-    fetchData();
+    } catch (err) {
+      if (isMounted) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      }
+    } finally {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }
 
     return () => {
       isMounted = false;
     };
+  }, [apiCall]);
+
+  useEffect(() => {
+    fetchData();
   }, dependencies);
 
   const refetch = () => {
