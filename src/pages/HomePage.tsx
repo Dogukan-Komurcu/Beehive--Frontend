@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { LoginModal } from '@/components/auth/LoginModal';
 import { RegisterModal } from '@/components/auth/RegisterModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { 
   MapPin, 
   Thermometer, 
@@ -15,20 +15,39 @@ import {
   Shield,
   Smartphone,
   TrendingUp,
-  Users
+  Users,
+  Eye,
+  Clock
 } from 'lucide-react';
 
 const HomePage = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const { user } = useAuth();
+  const { user, loginAsDemo } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   React.useEffect(() => {
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  const handleDemoLogin = async () => {
+    try {
+      await loginAsDemo();
+      toast({
+        title: "Demo Moduna Hoş Geldiniz! 🎬",
+        description: "30 dakikalık demo oturumunuz başladı. Tüm verileri görüntüleyebilir ancak düzenleyemezsiniz.",
+      });
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Demo moduna geçiş başarısız oldu.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const features = [
     {
@@ -121,6 +140,22 @@ const HomePage = () => {
               >
                 🚀 Hemen Başlayın
               </Button>
+              
+              {/* Demo Button */}
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={handleDemoLogin}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50 text-lg px-8 py-4 relative overflow-hidden group"
+              >
+                <Eye className="mr-2 h-5 w-5" />
+                🎬 Demo Modunu Deneyin
+                <div className="flex items-center ml-2 text-sm opacity-75">
+                  <Clock className="h-3 w-3 mr-1" />
+                  <span>30dk</span>
+                </div>
+              </Button>
+              
               <Button 
                 size="lg" 
                 variant="outline"
@@ -128,6 +163,13 @@ const HomePage = () => {
               >
                 📺 Demo İzle
               </Button>
+            </div>
+
+            {/* Demo Info */}
+            <div className="mt-6 inline-flex items-center bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-sm text-blue-700">
+              <Eye className="h-4 w-4 mr-2" />
+              <span className="font-medium">Demo Modu:</span>
+              <span className="ml-1">Tüm özellikleri keşfedin, kayıt gerektirmez!</span>
             </div>
           </div>
         </div>

@@ -12,7 +12,8 @@ import {
   Settings,
   Users,
   LogOut,
-  Layers
+  Layers,
+  Eye
 } from 'lucide-react';
 
 const menuItems = [
@@ -20,31 +21,31 @@ const menuItems = [
     label: 'Dashboard',
     icon: Home,
     path: '/dashboard',
-    roles: ['admin', 'observer']
+    roles: ['admin', 'observer', 'demo']
   },
   {
     label: 'Kovanlar',
     icon: Layers,
     path: '/dashboard/hives',
-    roles: ['admin', 'observer']
+    roles: ['admin', 'observer', 'demo']
   },
   {
     label: 'Harita',
     icon: Map,
     path: '/dashboard/map',
-    roles: ['admin', 'observer']
+    roles: ['admin', 'observer', 'demo']
   },
   {
     label: 'Grafikler',
     icon: BarChart3,
     path: '/dashboard/analytics',
-    roles: ['admin', 'observer']
+    roles: ['admin', 'observer', 'demo']
   },
   {
     label: 'Uyarılar',
     icon: Bell,
     path: '/dashboard/alerts',
-    roles: ['admin', 'observer']
+    roles: ['admin', 'observer', 'demo']
   },
   {
     label: 'Kullanıcılar',
@@ -63,7 +64,7 @@ const menuItems = [
 export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isDemoMode } = useAuth();
 
   const filteredMenuItems = menuItems.filter(item => 
     item.roles.includes(user?.role || 'observer')
@@ -72,6 +73,15 @@ export const Sidebar = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const getRoleDisplayName = (role?: string) => {
+    switch (role) {
+      case 'admin': return 'Yönetici';
+      case 'observer': return 'Gözlemci';
+      case 'demo': return 'Demo Kullanıcı';
+      default: return 'Gözlemci';
+    }
   };
 
   return (
@@ -90,19 +100,32 @@ export const Sidebar = () => {
       </div>
 
       {/* User Info */}
-      <div className="p-4 border-b border-gray-200 bg-amber-50">
+      <div className={cn(
+        "p-4 border-b border-gray-200",
+        isDemoMode ? "bg-blue-50" : "bg-amber-50"
+      )}>
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-honey rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-semibold">
-              {user?.name.charAt(0).toUpperCase()}
-            </span>
+          <div className={cn(
+            "w-8 h-8 rounded-full flex items-center justify-center",
+            isDemoMode ? "bg-blue-500" : "bg-gradient-honey"
+          )}>
+            {isDemoMode ? (
+              <Eye className="h-4 w-4 text-white" />
+            ) : (
+              <span className="text-white text-sm font-semibold">
+                {user?.name.charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
               {user?.name}
             </p>
-            <p className="text-xs text-gray-500 capitalize">
-              {user?.role === 'admin' ? 'Yönetici' : 'Gözlemci'}
+            <p className={cn(
+              "text-xs capitalize",
+              isDemoMode ? "text-blue-600" : "text-gray-500"
+            )}>
+              {getRoleDisplayName(user?.role)}
             </p>
           </div>
         </div>
@@ -141,7 +164,7 @@ export const Sidebar = () => {
           className="w-full justify-start h-10 text-red-600 hover:bg-red-50 hover:text-red-700"
         >
           <LogOut className="mr-3 h-4 w-4" />
-          Çıkış Yap
+          {isDemoMode ? 'Demo\'dan Çık' : 'Çıkış Yap'}
         </Button>
       </div>
     </div>

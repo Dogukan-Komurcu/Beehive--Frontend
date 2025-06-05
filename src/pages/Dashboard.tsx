@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,12 +19,17 @@ import { ReportsModal } from '@/components/dashboard/ReportsModal';
 import { LiveMonitoringModal } from '@/components/dashboard/LiveMonitoringModal';
 import { AllHivesModal } from '@/components/dashboard/AllHivesModal';
 import { AllAlertsModal } from '@/components/dashboard/AllAlertsModal';
+import { DemoModeIndicator } from '@/components/dashboard/DemoModeIndicator';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const [showReports, setShowReports] = useState(false);
   const [showLiveMonitoring, setShowLiveMonitoring] = useState(false);
   const [showAllHives, setShowAllHives] = useState(false);
   const [showAllAlerts, setShowAllAlerts] = useState(false);
+  const { isDemoMode } = useAuth();
+  const { toast } = useToast();
 
   // Mock veriler
   const stats = {
@@ -46,8 +52,23 @@ const Dashboard = () => {
     { id: 3, hive: 'Kovan-007', message: 'Düşük batarya seviyesi', time: '1 saat önce', type: 'warning' },
   ];
 
+  const handleDemoRestriction = (action: string) => {
+    if (isDemoMode) {
+      toast({
+        title: "Demo Modu Kısıtlaması",
+        description: `${action} demo modunda devre dışıdır. Tam erişim için kayıt olun.`,
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Demo Mode Indicator */}
+      <DemoModeIndicator />
+
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -55,7 +76,14 @@ const Dashboard = () => {
           <p className="text-gray-600">Arı kovanlarınızın genel durumu</p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline" onClick={() => setShowReports(true)}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              if (handleDemoRestriction("Rapor görüntüleme")) {
+                setShowReports(true);
+              }
+            }}
+          >
             <Eye className="mr-2 h-4 w-4" />
             Raporları Görüntüle
           </Button>
