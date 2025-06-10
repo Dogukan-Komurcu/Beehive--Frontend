@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,7 +72,7 @@ export const Header = () => {
               <Button variant="ghost" className="flex items-center space-x-2 px-3">
                 <div className="w-8 h-8 bg-gradient-honey rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-semibold">
-                    {user?.name.charAt(0).toUpperCase()}
+                    {user?.name ? user.name.charAt(0).toUpperCase() : ''}
                   </span>
                 </div>
                 <div className="text-left">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,8 @@ import {
   Users,
   LogOut,
   Layers,
-  Eye
+  Eye,
+  Activity
 } from 'lucide-react';
 
 const menuItems = [
@@ -45,6 +45,12 @@ const menuItems = [
     label: 'Uyarılar',
     icon: Bell,
     path: '/dashboard/alerts',
+    roles: ['admin', 'observer', 'demo']
+  },
+  {
+    label: 'Sensörler',
+    icon: Activity,
+    path: '/dashboard/sensors',
     roles: ['admin', 'observer', 'demo']
   },
   {
@@ -113,7 +119,7 @@ export const Sidebar = () => {
               <Eye className="h-4 w-4 text-white" />
             ) : (
               <span className="text-white text-sm font-semibold">
-                {user?.name.charAt(0).toUpperCase()}
+                {user?.name ? user.name.charAt(0).toUpperCase() : ''}
               </span>
             )}
           </div>

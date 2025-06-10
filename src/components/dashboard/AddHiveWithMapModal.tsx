@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -70,14 +69,13 @@ export const AddHiveWithMapModal = ({ isOpen, onClose, onAdd }: AddHiveWithMapMo
     }
 
     const newHive = {
-      id: Date.now(),
-      ...formData,
-      status: 'active',
-      temperature: Math.floor(Math.random() * 10) + 30,
-      humidity: Math.floor(Math.random() * 30) + 50,
-      battery: Math.floor(Math.random() * 40) + 60,
-      lastUpdate: 'Az önce',
-      installDate: new Date().toISOString().split('T')[0],
+      // id backend tarafından atanmalı
+      name: formData.name,
+      location: formData.location,
+      coordinates: formData.coordinates,
+      estimatedBeeCount: formData.beeCount, // backend camelCase bekliyor
+      installDate: new Date().toISOString(),
+      // Diğer alanlar backend default veya opsiyonel ise eklenmez
     };
 
     onAdd(newHive);

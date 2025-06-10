@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Crown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginModalProps {
   open: boolean;
@@ -16,8 +16,23 @@ interface LoginModalProps {
 export const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, user } = useAuth();
+  const navigate = useNavigate();
+  const redirected = useRef(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!open && user && !redirected.current) {
+      redirected.current = true;
+      if (user.role === 'admin') {
+        navigate('/dashboard/admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+    if (open) redirected.current = false;
+    // eslint-disable-next-line
+  }, [user, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,9 +48,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ open, onClose }) => {
 
     try {
       await login(email, password);
+      // Yönlendirme useEffect ile yapılacak
       toast({
         title: "Başarılı!",
-        description: "Giriş yapıldı. Dashboard'a yönlendiriliyorsunuz...",
+        description: "Giriş yapıldı. Yönlendiriliyorsunuz...",
       });
       onClose();
     } catch (error) {

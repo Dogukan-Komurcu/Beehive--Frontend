@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import { AllAlertsModal } from '@/components/dashboard/AllAlertsModal';
 import { DemoModeIndicator } from '@/components/dashboard/DemoModeIndicator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Hive, SensorData } from '@/types/api';
 
 const Dashboard = () => {
   const [showReports, setShowReports] = useState(false);
@@ -30,27 +31,59 @@ const Dashboard = () => {
   const [showAllAlerts, setShowAllAlerts] = useState(false);
   const { isDemoMode } = useAuth();
   const { toast } = useToast();
+  const [stats, setStats] = useState({ totalHives: 0, activeHives: 0, alertCount: 0, offlineHives: 0 });
+  const [recentHives, setRecentHives] = useState<Hive[]>([]);
+  const [recentAlerts, setRecentAlerts] = useState<any[]>([]);
+  const [sensorDataMap, setSensorDataMap] = useState<Record<number, SensorData | null>>({});
+  const [loading, setLoading] = useState(true);
 
-  // Mock veriler
-  const stats = {
-    totalHives: 24,
-    activeHives: 21,
-    alertCount: 3,
-    offlineHives: 3
-  };
-
-  const recentHives = [
-    { id: 1, name: 'Kovan-001', location: 'Ankara Bahçe', status: 'active', temp: 34, humidity: 65, battery: 85 },
-    { id: 2, name: 'Kovan-002', location: 'İzmir Çiftlik', status: 'warning', temp: 38, humidity: 45, battery: 45 },
-    { id: 3, name: 'Kovan-003', location: 'Bursa Tarla', status: 'active', temp: 32, humidity: 70, battery: 92 },
-    { id: 4, name: 'Kovan-004', location: 'Antalya Sera', status: 'offline', temp: 0, humidity: 0, battery: 0 },
-  ];
-
-  const recentAlerts = [
-    { id: 1, hive: 'Kovan-002', message: 'Yüksek sıcaklık uyarısı', time: '5 dk önce', type: 'warning' },
-    { id: 2, hive: 'Kovan-004', message: 'Bağlantı kesildi', time: '15 dk önce', type: 'error' },
-    { id: 3, hive: 'Kovan-007', message: 'Düşük batarya seviyesi', time: '1 saat önce', type: 'warning' },
-  ];
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      setLoading(true);
+      try {
+        const dashboardData = await apiService.getDashboardData();
+        setStats({
+          totalHives: dashboardData.totalHives,
+          activeHives: dashboardData.activeHives,
+          alertCount: dashboardData.alertCount,
+          offlineHives: dashboardData.offlineHives,
+        });
+        const hivesData = await apiService.getMyHives();
+        setRecentHives(hivesData);
+        // Her kovan için en güncel sensör verisini çek
+        const sensorMap: Record<number, SensorData | null> = {};
+        for (const hive of hivesData) {
+          try {
+            const data = await apiService.getSensorData(hive.id);
+            sensorMap[hive.id] = Array.isArray(data) && data.length > 0 ? data[data.length - 1] : null;
+          } catch {
+            sensorMap[hive.id] = null;
+          }
+        }
+        setSensorDataMap(sensorMap);
+        // Alerts
+        const data = await apiService.getMyAlerts();
+        const mapped = Array.isArray(data)
+          ? data.slice(0, 3).map((alert: any) => ({
+              id: alert.id,
+              hiveId: alert.hiveId ?? alert.hive_id ?? (alert.hive && alert.hive.id),
+              hiveName: alert.hiveName ?? alert.hive_name ?? (alert.hive && alert.hive.name),
+              message: alert.message,
+              type: alert.type,
+              timestamp: alert.timestamp ?? alert.createdAt ?? alert.created_at,
+              isRead: alert.isRead ?? alert.read,
+              userId: alert.userId ?? (alert.user && alert.user.id),
+            }))
+          : [];
+        setRecentAlerts(mapped);
+      } catch (error) {
+        // Hata yönetimi eklenebilir
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
 
   const handleDemoRestriction = (action: string) => {
     if (isDemoMode) {
@@ -177,42 +210,44 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentHives.map((hive) => (
-                <div key={hive.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gradient-honey rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">
-                        {hive.name.split('-')[1]}
-                      </span>
+              {recentHives.map((hive) => {
+                const sensor = sensorDataMap[hive.id];
+                return (
+                  <div key={hive.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-gradient-honey rounded-lg flex items-center justify-center">
+                        <span className="text-white font-semibold text-sm">
+                          {hive.name.split('-')[1] || hive.name}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{hive.name}</h4>
+                        <p className="text-sm text-gray-500">{hive.location}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">{hive.name}</h4>
-                      <p className="text-sm text-gray-500">{hive.location}</p>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Thermometer className="h-4 w-4 text-orange-500" />
+                        <span>{sensor ? sensor.temperature : '-'}°C</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Droplets className="h-4 w-4 text-blue-500" />
+                        <span>{sensor ? sensor.humidity : '-'}%</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Battery className="h-4 w-4 text-green-500" />
+                        <span>{sensor ? sensor.battery : '-'}%</span>
+                      </div>
+                      <Badge 
+                        variant={hive.status === 'active' ? 'default' : hive.status === 'warning' ? 'destructive' : 'secondary'}
+                        className={hive.status === 'active' ? 'bg-green-100 text-green-800' : ''}
+                      >
+                        {hive.status === 'active' ? 'Aktif' : hive.status === 'warning' ? 'Uyarı' : 'Çevrimdışı'}
+                      </Badge>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Thermometer className="h-4 w-4 text-orange-500" />
-                      <span>{hive.temp}°C</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Droplets className="h-4 w-4 text-blue-500" />
-                      <span>{hive.humidity}%</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-sm">
-                      <Battery className="h-4 w-4 text-green-500" />
-                      <span>{hive.battery}%</span>
-                    </div>
-                    <Badge 
-                      variant={hive.status === 'active' ? 'default' : hive.status === 'warning' ? 'destructive' : 'secondary'}
-                      className={hive.status === 'active' ? 'bg-green-100 text-green-800' : ''}
-                    >
-                      {hive.status === 'active' ? 'Aktif' : hive.status === 'warning' ? 'Uyarı' : 'Çevrimdışı'}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-4 text-center">
               <Button variant="outline" className="w-full" onClick={() => setShowAllHives(true)}>
@@ -232,23 +267,27 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentAlerts.map((alert) => (
-                <div key={alert.id} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{alert.hive}</p>
-                      <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
+              {recentAlerts.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">Hiç uyarı yok.</div>
+              ) : (
+                recentAlerts.map((alert) => (
+                  <div key={alert.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{alert.hiveName || alert.hiveId}</p>
+                        <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
+                      </div>
+                      <Badge 
+                        variant={alert.type === 'error' ? 'destructive' : alert.type === 'warning' ? 'secondary' : 'outline'}
+                        className="ml-2"
+                      >
+                        {alert.type === 'error' ? 'Kritik' : alert.type === 'warning' ? 'Uyarı' : 'Bilgi'}
+                      </Badge>
                     </div>
-                    <Badge 
-                      variant={alert.type === 'error' ? 'destructive' : 'secondary'}
-                      className="ml-2"
-                    >
-                      {alert.type === 'error' ? 'Kritik' : 'Uyarı'}
-                    </Badge>
+                    <p className="text-xs text-gray-500 mt-2">{alert.timestamp}</p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">{alert.time}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <div className="mt-4">
               <Button variant="outline" className="w-full" onClick={() => setShowAllAlerts(true)}>

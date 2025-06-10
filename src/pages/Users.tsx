@@ -1,5 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
+import type { User as UserType } from '@/types/api';
+import { User as UserIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +11,6 @@ import {
   UserPlus, 
   Users as UsersIcon, 
   Shield, 
-  User, 
   Search,
   MoreVertical,
   Edit,
@@ -25,65 +26,27 @@ import {
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const users = [
-    {
-      id: 1,
-      name: 'Ahmet Yılmaz',
-      email: 'ahmet@example.com',
-      phone: '+90 532 123 4567',
-      role: 'admin',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face',
-      lastActive: '2 dakika önce',
-      status: 'online',
-      joinDate: '15 Mart 2024',
-      location: 'Ankara, Türkiye',
-      hivesManaged: 12
-    },
-    {
-      id: 2,
-      name: 'Fatma Demir',
-      email: 'fatma@example.com',
-      phone: '+90 532 987 6543',
-      role: 'observer',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face',
-      lastActive: '1 saat önce',
-      status: 'offline',
-      joinDate: '8 Nisan 2024',
-      location: 'İstanbul, Türkiye',
-      hivesManaged: 6
-    },
-    {
-      id: 3,
-      name: 'Mehmet Kaya',
-      email: 'mehmet@example.com',
-      phone: '+90 532 456 7890',
-      role: 'observer',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face',
-      lastActive: '3 saat önce',
-      status: 'offline',
-      joinDate: '22 Şubat 2024',
-      location: 'İzmir, Türkiye',
-      hivesManaged: 8
-    },
-    {
-      id: 4,
-      name: 'Ayşe Özkan',
-      email: 'ayse@example.com',
-      phone: '+90 532 321 6547',
-      role: 'admin',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=32&h=32&fit=crop&crop=face',
-      lastActive: '1 gün önce',
-      status: 'offline',
-      joinDate: '5 Ocak 2024',
-      location: 'Antalya, Türkiye',
-      hivesManaged: 15
-    }
-  ];
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const data = await apiService.getUsers();
+        setUsers(data);
+      } catch (error) {
+        // Hata yönetimi eklenebilir
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
     return matchesSearch && matchesRole;
   });
@@ -169,7 +132,7 @@ const Users = () => {
                 </p>
               </div>
               <div className="bg-purple-500 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <User className="h-6 w-6 text-white" />
+                <UserIcon className="h-6 w-6 text-white" />
               </div>
             </div>
           </CardContent>

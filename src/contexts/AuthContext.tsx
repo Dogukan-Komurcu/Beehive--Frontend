@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiService } from '@/services/api';
 
@@ -96,9 +95,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await apiService.login({ email, password });
-      const { user: userData, token } = response;
-      
+      // Önce admin login endpointini dene
+      let response;
+      let isAdmin = false;
+      try {
+        response = await apiService.adminLogin({ email, password });
+        isAdmin = true;
+      } catch (adminErr) {
+        response = await apiService.login({ email, password });
+      }
+      const { admin, user, token } = response;
+      const userData = isAdmin
+        ? { ...admin, role: 'admin' }
+        : { ...user, role: user?.role || 'observer' };
       setUser(userData);
       localStorage.setItem('authToken', token);
       localStorage.setItem('user', JSON.stringify(userData));

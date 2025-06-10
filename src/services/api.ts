@@ -1,6 +1,5 @@
-
 // Backend API servisleri
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 class ApiService {
   private baseUrl: string;
@@ -87,47 +86,79 @@ class ApiService {
 
   // Hive endpoints
   async getHives() {
-    return this.request<any[]>('/hives');
+    return this.request<any[]>('/api/hives');
   }
 
   async getHiveById(id: number) {
-    return this.request<any>(`/hives/${id}`);
+    return this.request<any>(`/api/hives/${id}`);
   }
 
   async createHive(hiveData: Omit<any, 'id'>) {
-    return this.request<any>('/hives', {
+    return this.request<any>('/api/hives', {
       method: 'POST',
       body: JSON.stringify(hiveData),
     });
   }
 
   async updateHive(id: number, hiveData: Partial<any>) {
-    return this.request<any>(`/hives/${id}`, {
+    return this.request<any>(`/api/hives/${id}`, {
       method: 'PUT',
       body: JSON.stringify(hiveData),
     });
   }
 
   async deleteHive(id: number) {
-    return this.request<void>(`/hives/${id}`, {
+    return this.request<void>(`/api/hives/${id}`, {
       method: 'DELETE',
     });
   }
 
-  // Alert endpoints
+  async getMyHives() {
+    return this.request<any[]>('/api/hives/my');
+  }
+
+  // Hive Alert endpoints (HiveAlertController)
   async getAlerts() {
-    return this.request<any[]>('/alerts');
+    return this.request<any[]>('/api/hive-alerts');
+  }
+
+  async getMyAlerts() {
+    return this.request<any[]>('/api/hive-alerts/my-alerts');
   }
 
   async markAlertAsRead(id: number) {
-    return this.request<any>(`/alerts/${id}/read`, {
+    return this.request<void>(`/api/hive-alerts/${id}/read`, {
       method: 'PUT',
     });
   }
 
   async deleteAlert(id: number) {
-    return this.request<void>(`/alerts/${id}`, {
+    const token = localStorage.getItem('authToken');
+    const config: RequestInit = {
       method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    };
+    const response = await fetch(`${this.baseUrl}/api/hive-alerts/${id}`, config);
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: 'Network error' };
+      }
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    // 204 No Content ise body yok, hata vermemesi için burada bitiriyoruz
+    return;
+  }
+
+  async createAlert(alert: any) {
+    return this.request<any>('/api/hive-alerts', {
+      method: 'POST',
+      body: JSON.stringify(alert),
     });
   }
 
@@ -136,34 +167,49 @@ class ApiService {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    
-    return this.request<any[]>(`/hives/${hiveId}/sensor-data?${params.toString()}`);
+    return this.request<any[]>(`/api/hives/${hiveId}/sensor-data?${params.toString()}`);
   }
 
-  // Dashboard endpoints
-  async getDashboardStats() {
-    return this.request<any>('/dashboard/stats');
-  }
-
-  async getRecentHives(limit: number = 10) {
-    return this.request<any[]>(`/dashboard/recent-hives?limit=${limit}`);
-  }
-
-  async getRecentAlerts(limit: number = 10) {
-    return this.request<any[]>(`/dashboard/recent-alerts?limit=${limit}`);
-  }
-
-  // Analytics endpoints
-  async getAnalyticsData(type: string, period: string) {
-    return this.request<any>(`/analytics/${type}?period=${period}`);
-  }
-
-  // Reports endpoints
-  async generateReport(type: string, filters: any) {
-    return this.request<Blob>('/reports/generate', {
+  // Add sensor data for a hive
+  async addSensorData(hiveId: number, data: { temperature: number; humidity: number; battery: number; timestamp?: string }) {
+    return this.request<any>(`/api/hives/${hiveId}/sensor-data`, {
       method: 'POST',
-      body: JSON.stringify({ type, filters }),
+      body: JSON.stringify(data),
     });
+  }
+
+  // Dashboard endpoints (Backend'e uygun)
+  async getDashboardData() {
+    return this.request<any>('/api/dashboard');
+  }
+
+  async getTotalUsers() {
+    return this.request<number>('/api/dashboard/stats/total-users');
+  }
+
+  async getTotalHives() {
+    return this.request<number>('/api/dashboard/stats/total-hives');
+  }
+
+  async getUsedHives() {
+    return this.request<number>('/api/dashboard/stats/used-hives');
+  }
+
+  async getDailyHives(start: string, end: string) {
+    return this.request<number>(`/api/dashboard/stats/daily-hives?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+  }
+
+  async getDailyColonies(start: string, end: string) {
+    return this.request<number>(`/api/dashboard/stats/daily-colonies?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+  }
+
+  // Analytics endpoints (Backend'e uygun)
+  async getTimeSeries(kovanId: number, range: string) {
+    return this.request<any[]>(`/api/analytics/timeseries?kovanId=${kovanId}&range=${encodeURIComponent(range)}`);
+  }
+
+  async getSummary(kovanId: number, range: string) {
+    return this.request<any>(`/api/analytics/summary?kovanId=${kovanId}&range=${encodeURIComponent(range)}`);
   }
 }
 

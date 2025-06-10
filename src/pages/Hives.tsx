@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ import {
 import { HiveDetailModal } from '@/components/dashboard/HiveDetailModal';
 import { EditHiveModal } from '@/components/dashboard/EditHiveModal';
 import { AddHiveWithMapModal } from '@/components/dashboard/AddHiveWithMapModal';
+import { Hive, SensorData } from '@/types/api';
 
 const Hives = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,120 +39,47 @@ const Hives = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedHive, setSelectedHive] = useState<any>(null);
+  const [hives, setHives] = useState<Hive[]>([]);
+  const [sensorDataMap, setSensorDataMap] = useState<Record<number, SensorData | null>>({});
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Mock veriler - expanded with more hives
-  const [hives, setHives] = useState([
-    {
-      id: 1,
-      name: 'Kovan-001',
-      location: 'Ankara Bahçe',
-      coordinates: '39.9334, 32.8597',
-      status: 'active',
-      temperature: 34,
-      humidity: 65,
-      battery: 85,
-      lastUpdate: '2 dk önce',
-      installDate: '2024-01-15',
-      beeCount: 45000
-    },
-    {
-      id: 2,
-      name: 'Kovan-002',
-      location: 'İzmir Çiftlik',
-      coordinates: '38.4237, 27.1428',
-      status: 'warning',
-      temperature: 38,
-      humidity: 45,
-      battery: 45,
-      lastUpdate: '5 dk önce',
-      installDate: '2024-02-10',
-      beeCount: 52000
-    },
-    {
-      id: 3,
-      name: 'Kovan-003',
-      location: 'Bursa Tarla',
-      coordinates: '40.1826, 29.0669',
-      status: 'active',
-      temperature: 32,
-      humidity: 70,
-      battery: 92,
-      lastUpdate: '1 dk önce',
-      installDate: '2024-01-20',
-      beeCount: 48000
-    },
-    {
-      id: 4,
-      name: 'Kovan-004',
-      location: 'Antalya Sera',
-      coordinates: '36.8969, 30.7133',
-      status: 'offline',
-      temperature: 0,
-      humidity: 0,
-      battery: 0,
-      lastUpdate: '2 saat önce',
-      installDate: '2024-03-05',
-      beeCount: 0
-    },
-    {
-      id: 5,
-      name: 'Kovan-005',
-      location: 'Konya Çayır',
-      coordinates: '37.8746, 32.4932',
-      status: 'active',
-      temperature: 33,
-      humidity: 68,
-      battery: 78,
-      lastUpdate: '3 dk önce',
-      installDate: '2024-02-25',
-      beeCount: 41000
-    },
-    {
-      id: 6,
-      name: 'Kovan-006',
-      location: 'Trabzon Yayla',
-      coordinates: '41.0015, 39.7178',
-      status: 'active',
-      temperature: 31,
-      humidity: 72,
-      battery: 88,
-      lastUpdate: '4 dk önce',
-      installDate: '2024-03-10',
-      beeCount: 43000
-    },
-    {
-      id: 7,
-      name: 'Kovan-007',
-      location: 'Muğla Orman',
-      coordinates: '37.2153, 28.3636',
-      status: 'warning',
-      temperature: 39,
-      humidity: 42,
-      battery: 25,
-      lastUpdate: '8 dk önce',
-      installDate: '2024-01-30',
-      beeCount: 38000
-    },
-    {
-      id: 8,
-      name: 'Kovan-008',
-      location: 'Samsun Kıyı',
-      coordinates: '41.2928, 36.3313',
-      status: 'active',
-      temperature: 29,
-      humidity: 75,
-      battery: 91,
-      lastUpdate: '1 dk önce',
-      installDate: '2024-02-15',
-      beeCount: 46000
-    }
-  ]);
+  useEffect(() => {
+    const fetchHives = async () => {
+      setLoading(true);
+      try {
+        const data = await apiService.getHives();
+        console.log('API hives:', data); // estimated_bee_count kontrolü
+        setHives(data);
+        // Her kovan için en güncel sensör verisini çek
+        const sensorMap: Record<number, SensorData | null> = {};
+        for (const hive of data) {
+          try {
+            const sensorList = await apiService.getSensorData(hive.id);
+            sensorMap[hive.id] = Array.isArray(sensorList) && sensorList.length > 0 ? sensorList[sensorList.length - 1] : null;
+          } catch {
+            sensorMap[hive.id] = null;
+          }
+        }
+        setSensorDataMap(sensorMap);
+      } catch (error: any) {
+        toast({
+          title: 'Kovanlar yüklenemedi',
+          description: error.message || 'Bir hata oluştu.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHives();
+  }, [toast]);
 
+  // Mock veriler kaldırıldı, filtreleme ve sıralama backend'den gelen hives ile yapılacak
   const filteredAndSortedHives = hives
     .filter(hive => {
       const matchesSearch = hive.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           hive.location.toLowerCase().includes(searchTerm.toLowerCase());
+        hive.location.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = filterStatus === 'all' || hive.status === filterStatus;
       return matchesSearch && matchesFilter;
     })
@@ -178,27 +107,58 @@ const Hives = () => {
       return sortOrder === 'asc' ? compareValue : -compareValue;
     });
 
-  const handleAddHive = (newHive: any) => {
-    setHives(prev => [...prev, newHive]);
-    toast({
-      title: "Başarılı!",
-      description: "Yeni kovan harita ile eklendi.",
-    });
+  const handleAddHive = async (newHive: Omit<Hive, 'id'>) => {
+    try {
+      const created = await apiService.createHive(newHive);
+      setHives(prev => [...prev, created]);
+      toast({
+        title: 'Başarılı!',
+        description: 'Yeni kovan eklendi.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Kovan eklenemedi',
+        description: error.message || 'Bir hata oluştu.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleEditHive = (updatedHive: any) => {
-    setHives(prev => prev.map(h => h.id === updatedHive.id ? updatedHive : h));
+  const handleEditHive = async (updatedHive: Hive) => {
+    try {
+      const updated = await apiService.updateHive(updatedHive.id, updatedHive);
+      setHives(prev => prev.map(h => h.id === updated.id ? updated : h));
+      toast({
+        title: 'Kovan güncellendi',
+        description: 'Kovan bilgileri başarıyla güncellendi.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Kovan güncellenemedi',
+        description: error.message || 'Bir hata oluştu.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleDeleteHive = (id: number) => {
-    setHives(hives.filter(hive => hive.id !== id));
-    toast({
-      title: "Kovan silindi",
-      description: "Kovan başarıyla sistemden kaldırıldı.",
-    });
+  const handleDeleteHive = async (id: number) => {
+    try {
+      await apiService.deleteHive(id);
+      setHives(hives.filter(hive => hive.id !== id));
+      toast({
+        title: 'Kovan silindi',
+        description: 'Kovan başarıyla sistemden kaldırıldı.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Kovan silinemedi',
+        description: error.message || 'Bir hata oluştu.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleViewDetails = (hive: any) => {
+  const handleViewDetails = (hive: Hive) => {
     setSelectedHive(hive);
     setShowDetailModal(true);
   };
@@ -358,92 +318,67 @@ const Hives = () => {
       {/* Hives Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAndSortedHives.map((hive) => (
-          <Card key={hive.id} className="card-hover">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{hive.name}</CardTitle>
-                <Badge className={getStatusColor(hive.status)}>
-                  {getStatusText(hive.status)}
-                </Badge>
+          <Card key={hive.id} className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <div className="font-semibold text-lg">{hive.name}</div>
+                <div className="text-gray-500 text-sm">{hive.location}</div>
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <MapPin className="mr-1 h-4 w-4" />
-                {hive.location}
+              <Badge variant="secondary" className="text-xs">{hive.status === 'active' ? 'Aktif' : hive.status === 'warning' ? 'Uyarı' : 'Bilinmiyor'}</Badge>
+            </div>
+            <div className="flex gap-6 mb-2">
+              <div className="flex items-center gap-2">
+                <Thermometer className="h-4 w-4 text-orange-500" />
+                <span>Sıcaklık: <b>{sensorDataMap[hive.id]?.temperature ?? '-'}</b>°C</span>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Sensor Data */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <Thermometer className="h-4 w-4 text-orange-500" />
-                  </div>
-                  <div className="text-sm font-medium">{hive.temperature}°C</div>
-                  <div className="text-xs text-gray-500">Sıcaklık</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <Droplets className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div className="text-sm font-medium">{hive.humidity}%</div>
-                  <div className="text-xs text-gray-500">Nem</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <Battery className="h-4 w-4 text-green-500" />
-                  </div>
-                  <div className="text-sm font-medium">{hive.battery}%</div>
-                  <div className="text-xs text-gray-500">Batarya</div>
-                </div>
+              <div className="flex items-center gap-2">
+                <Droplets className="h-4 w-4 text-blue-500" />
+                <span>Nem: <b>{sensorDataMap[hive.id]?.humidity ?? '-'}</b>%</span>
               </div>
-
-              {/* Additional Info */}
-              <div className="pt-2 border-t space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Arı Sayısı:</span>
-                  <span className="font-medium">{hive.beeCount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Son Güncelleme:</span>
-                  <span className="font-medium">{hive.lastUpdate}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Kurulum:</span>
-                  <span className="font-medium">{new Date(hive.installDate).toLocaleDateString('tr-TR')}</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <Battery className="h-4 w-4 text-green-500" />
+                <span>Batarya: <b>{sensorDataMap[hive.id]?.battery ?? '-'}</b>%</span>
               </div>
-
-              {/* Actions */}
-              <div className="flex space-x-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleViewDetails(hive)}
-                >
-                  <Eye className="mr-1 h-3 w-3" />
-                  Detay
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => handleEditClick(hive)}
-                >
-                  <Edit className="mr-1 h-3 w-3" />
-                  Düzenle
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1 text-red-600 hover:bg-red-50"
-                  onClick={() => handleDeleteHive(hive.id)}
-                >
-                  <Trash2 className="mr-1 h-3 w-3" />
-                  Sil
-                </Button>
-              </div>
-            </CardContent>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-medium">🐝 Arı Sayısı:</span>
+              <b>{hive.estimated_bee_count ?? hive.estimatedBeeCount ?? hive.beeCount ?? '-'}</b>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="h-4 w-4 text-gray-400" />
+              <span className="font-medium">Kurulum Tarihi:</span>
+              <span>{hive.installDate ? new Date(hive.installDate).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' }) : '-'}</span>
+            </div>
+            {/* Actions */}
+            <div className="flex space-x-2 pt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1"
+                onClick={() => handleViewDetails(hive)}
+              >
+                <Eye className="mr-1 h-3 w-3" />
+                Detay
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1"
+                onClick={() => handleEditClick(hive)}
+              >
+                <Edit className="mr-1 h-3 w-3" />
+                Düzenle
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 text-red-600 hover:bg-red-50"
+                onClick={() => handleDeleteHive(hive.id)}
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                Sil
+              </Button>
+            </div>
           </Card>
         ))}
       </div>
@@ -468,6 +403,7 @@ const Hives = () => {
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
         hive={selectedHive}
+        sensorData={selectedHive ? sensorDataMap[selectedHive.id] : null}
       />
 
       <EditHiveModal

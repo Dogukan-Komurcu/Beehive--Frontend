@@ -1,7 +1,6 @@
-
 // Environment configuration for backend integration
 export const config = {
-  API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+  API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   APP_NAME: 'Akıllı Kovanı',
   APP_VERSION: '2.0',
   DEMO_SESSION_DURATION: 30 * 60 * 1000, // 30 minutes in milliseconds

@@ -1,5 +1,6 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiService } from '@/services/api';
+import { Hive } from '@/types/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,14 +8,24 @@ import { MapPin, Navigation, Layers, Filter, Search, Maximize2, Eye, AlertTriang
 
 const MapView = () => {
   const [viewMode, setViewMode] = useState('satellite');
-  const [selectedHive, setSelectedHive] = useState(null);
+  const [selectedHive, setSelectedHive] = useState<Hive | null>(null);
+  const [hiveLocations, setHiveLocations] = useState<Hive[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const hiveLocations = [
-    { id: 1, name: 'Kovan #001', lat: 39.9334, lng: 32.8597, status: 'healthy', temp: 34.2, activity: 87 },
-    { id: 2, name: 'Kovan #002', lat: 39.9284, lng: 32.8647, status: 'warning', temp: 38.1, activity: 65 },
-    { id: 3, name: 'Kovan #003', lat: 39.9384, lng: 32.8547, status: 'healthy', temp: 35.8, activity: 92 },
-    { id: 4, name: 'Kovan #004', lat: 39.9234, lng: 32.8697, status: 'error', temp: 41.2, activity: 23 },
-  ];
+  useEffect(() => {
+    const fetchHives = async () => {
+      setLoading(true);
+      try {
+        const data = await apiService.getHives();
+        setHiveLocations(data);
+      } catch (error) {
+        // Hata yönetimi eklenebilir
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHives();
+  }, []);
 
   const statusColors = {
     healthy: 'bg-green-500',
@@ -54,24 +65,27 @@ const MapView = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
           { label: 'Toplam Kovan', value: hiveLocations.length, icon: MapPin, color: 'gradient-honey' },
-          { label: 'Sağlıklı', value: hiveLocations.filter(h => h.status === 'healthy').length, icon: Eye, color: 'bg-green-500' },
+          { label: 'Aktif', value: hiveLocations.filter(h => h.status === 'active').length, icon: Eye, color: 'bg-green-500' },
           { label: 'Uyarı', value: hiveLocations.filter(h => h.status === 'warning').length, icon: AlertTriangle, color: 'bg-yellow-500' },
-          { label: 'Kritik', value: hiveLocations.filter(h => h.status === 'error').length, icon: AlertTriangle, color: 'bg-red-500' },
-        ].map((stat, index) => (
-          <Card key={index} className="card-premium card-hover animate-fade-in-delay group cursor-pointer">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
-                  <p className="text-3xl font-bold text-gray-900 group-hover:text-gradient transition-all duration-500">{stat.value}</p>
+          { label: 'Çevrimdışı', value: hiveLocations.filter(h => h.status === 'offline').length, icon: AlertTriangle, color: 'bg-red-500' }
+        ].map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={index} className="card-premium card-hover animate-fade-in-delay group cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
+                    <p className="text-3xl font-bold text-gray-900 group-hover:text-gradient transition-all duration-500">{stat.value}</p>
+                  </div>
+                  <div className={`${stat.color} p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="h-6 w-6 text-white" />
+                  </div>
                 </div>
-                <div className={`${stat.color} p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <stat.icon className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -155,29 +169,26 @@ const MapView = () => {
                       variant="outline" 
                       className={`${statusColors[hive.status]} text-white border-0`}
                     >
-                      {hive.status === 'healthy' ? 'Sağlıklı' : 
-                       hive.status === 'warning' ? 'Uyarı' : 'Kritik'}
+                      {hive.status === 'active' ? 'Aktif' : 
+                       hive.status === 'warning' ? 'Uyarı' : 'Çevrimdışı'}
                     </Badge>
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
                       <span className="text-gray-600">Sıcaklık</span>
                     </div>
-                    <span className="font-medium text-gray-900">{hive.temp}°C</span>
-                    
+                    <span className="font-medium text-gray-900">{hive.temperature}°C</span>
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                      <span className="text-gray-600">Aktivite</span>
+                      <span className="text-gray-600">Arı Sayısı</span>
                     </div>
-                    <span className="font-medium text-gray-900">{hive.activity}%</span>
+                    <span className="font-medium text-gray-900">{hive.beeCount}</span>
                   </div>
-                  
                   <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-honey transition-all duration-1000"
-                      style={{ width: `${hive.activity}%` }}
+                      style={{ width: `${Math.min(hive.beeCount / 1000, 100)}%` }}
                     ></div>
                   </div>
                 </div>
@@ -198,22 +209,20 @@ const MapView = () => {
                       variant="outline" 
                       className={`${statusColors[selectedHive.status]} text-white border-0 text-sm px-3 py-1`}
                     >
-                      {selectedHive.status === 'healthy' ? 'Sağlıklı' : 
-                       selectedHive.status === 'warning' ? 'Uyarı' : 'Kritik'}
+                      {selectedHive.status === 'active' ? 'Aktif' : 
+                       selectedHive.status === 'warning' ? 'Uyarı' : 'Çevrimdışı'}
                     </Badge>
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-3 bg-orange-50 rounded-lg">
-                      <p className="text-2xl font-bold text-orange-600">{selectedHive.temp}°C</p>
+                      <p className="text-2xl font-bold text-orange-600">{selectedHive.temperature}°C</p>
                       <p className="text-sm text-gray-600">Sıcaklık</p>
                     </div>
                     <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600">{selectedHive.activity}%</p>
-                      <p className="text-sm text-gray-600">Aktivite</p>
+                      <p className="text-2xl font-bold text-blue-600">{selectedHive.beeCount}</p>
+                      <p className="text-sm text-gray-600">Arı Sayısı</p>
                     </div>
                   </div>
-                  
                   <Button className="w-full gradient-honey text-white hover:shadow-lg">
                     Detaylı Görünüm
                   </Button>

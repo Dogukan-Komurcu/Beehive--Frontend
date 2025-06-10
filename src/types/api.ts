@@ -1,10 +1,9 @@
-
 // Backend API için veri tipleri
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'observer' | 'demo';
+  role: 'observer' | 'demo';
   avatar?: string;
   isDemo?: boolean;
   createdAt?: string;
@@ -22,7 +21,9 @@ export interface Hive {
   battery: number;
   lastUpdate: string;
   installDate: string;
-  beeCount: number;
+  beeCount?: number; // eski
+  estimated_bee_count?: number; // backend snake_case
+  estimatedBeeCount?: number; // frontend camelCase
   userId?: string;
 }
 
