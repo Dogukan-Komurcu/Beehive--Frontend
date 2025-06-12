@@ -1,13 +1,20 @@
+
 // Backend API için veri tipleri
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'observer' | 'demo';
+  role: 'admin' | 'observer' | 'demo';
   avatar?: string;
   isDemo?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  phone?: string;
+  location?: string;
+  joinDate?: string;
+  hivesManaged?: number;
+  status?: 'online' | 'offline';
+  lastActive?: string;
 }
 
 export interface Hive {

@@ -1,4 +1,5 @@
-// Backend API servisleri
+
+// Backend API servisi
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 class ApiService {
@@ -36,6 +37,13 @@ class ApiService {
   // Auth endpoints
   async login(credentials: { email: string; password: string }) {
     return this.request<{ user: any; token: string }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  }
+
+  async adminLogin(credentials: { email: string; password: string }) {
+    return this.request<{ admin: any; token: string }>('/auth/admin-login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
@@ -175,6 +183,13 @@ class ApiService {
     return this.request<any>(`/api/hives/${hiveId}/sensor-data`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Delete sensor data
+  async deleteSensorData(hiveId: number, sensorDataId: number) {
+    return this.request<void>(`/api/hives/${hiveId}/sensor-data/${sensorDataId}`, {
+      method: 'DELETE',
     });
   }
 
