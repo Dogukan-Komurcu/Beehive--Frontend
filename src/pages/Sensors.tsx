@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -131,7 +132,7 @@ const Sensors = () => {
 			// Eski verileri sil (sadece ilgili kovan için)
 			if (sensorHistories[editingHive.id]?.length) {
 				for (const row of sensorHistories[editingHive.id]) {
-					await apiService.deleteSensorData?.(row.id); // apiService'de varsa
+					await apiService.deleteSensorData(editingHive.id, row.id);
 				}
 			}
 			toast({ title: 'Başarılı', description: 'Sensör verisi güncellendi.' });
