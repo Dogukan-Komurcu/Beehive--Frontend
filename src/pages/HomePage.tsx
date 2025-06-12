@@ -23,7 +23,7 @@ import {
 const HomePage = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const { user, loginAsDemo } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -33,20 +33,8 @@ const HomePage = () => {
     }
   }, [user, navigate]);
 
-  const handleDemoLogin = async () => {
-    try {
-      await loginAsDemo();
-      toast({
-        title: "Demo Moduna Hoş Geldiniz! 🎬",
-        description: "30 dakikalık demo oturumunuz başladı. Tüm verileri görüntüleyebilir ancak düzenleyemezsiniz.",
-      });
-    } catch (error) {
-      toast({
-        title: "Hata",
-        description: "Demo moduna geçiş başarısız oldu.",
-        variant: "destructive"
-      });
-    }
+  const handleDemoClick = () => {
+    navigate('/demo');
   };
 
   const features = [
@@ -145,7 +133,7 @@ const HomePage = () => {
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={handleDemoLogin}
+                onClick={handleDemoClick}
                 className="border-blue-200 text-blue-700 hover:bg-blue-50 text-lg px-8 py-4 relative overflow-hidden group"
               >
                 <Eye className="mr-2 h-5 w-5" />
