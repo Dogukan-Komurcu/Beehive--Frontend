@@ -17,7 +17,12 @@ import {
   TrendingUp,
   Users,
   Eye,
-  Clock
+  Clock,
+  Settings,
+  Database,
+  AlertCircle,
+  Navigation,
+  ChevronRight
 } from 'lucide-react';
 
 const HomePage = () => {
@@ -60,19 +65,71 @@ const HomePage = () => {
     }
   ];
 
+  const quickLinks = [
+    {
+      title: 'Ana Dashboard',
+      description: 'Genel bakış ve önemli metrikleri görün',
+      icon: BarChart3,
+      path: '/dashboard',
+      color: 'from-blue-500 to-blue-600'
+    },
+    {
+      title: 'Kovan Yönetimi',
+      description: 'Kovanlarınızı yönetin ve düzenleyin',
+      icon: Database,
+      path: '/dashboard/hives',
+      color: 'from-green-500 to-green-600'
+    },
+    {
+      title: 'Harita Görünümü',
+      description: 'Kovanlarınızı harita üzerinde görün',
+      icon: Navigation,
+      path: '/dashboard/map',
+      color: 'from-purple-500 to-purple-600'
+    },
+    {
+      title: 'Sensör Verileri',
+      description: 'Detaylı sensör analizi ve geçmiş',
+      icon: Thermometer,
+      path: '/dashboard/sensors',
+      color: 'from-orange-500 to-orange-600'
+    },
+    {
+      title: 'Uyarılar',
+      description: 'Sistem uyarıları ve bildirimler',
+      icon: AlertCircle,
+      path: '/dashboard/alerts',
+      color: 'from-red-500 to-red-600'
+    },
+    {
+      title: 'Kullanıcı Yönetimi',
+      description: 'Kullanıcıları yönetin (Admin)',
+      icon: Users,
+      path: '/dashboard/users',
+      color: 'from-indigo-500 to-indigo-600'
+    },
+    {
+      title: 'Sistem Ayarları',
+      description: 'Uygulama ayarları ve yapılandırma',
+      icon: Settings,
+      path: '/dashboard/settings',
+      color: 'from-gray-500 to-gray-600'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50">
       {/* Header */}
-      <header className="relative z-10 bg-white/80 backdrop-blur-sm border-b border-amber-100">
+      <header className="relative z-10 bg-white/80 backdrop-blur-sm border-b border-amber-100 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-honey rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-honey rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-2xl">🐝</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Akılları Kovanı</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Akılları Kovanı</h1>
                 <p className="text-sm text-gray-600">Dijital Arı Kovanı Takip Sistemi</p>
               </div>
             </div>
@@ -82,15 +139,17 @@ const HomePage = () => {
               <Button 
                 variant="outline" 
                 onClick={() => setShowLogin(true)}
-                className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                className="border-amber-200 text-amber-700 hover:bg-amber-50 h-10 px-6"
               >
-                🔐 Giriş Yap
+                <Shield className="mr-2 h-4 w-4" />
+                Giriş Yap
               </Button>
               <Button 
                 onClick={() => setShowRegister(true)}
-                className="gradient-honey text-white hover:shadow-lg transition-all duration-300"
+                className="gradient-honey text-white hover:shadow-lg transition-all duration-300 h-10 px-6"
               >
-                📝 Kayıt Ol
+                <Users className="mr-2 h-4 w-4" />
+                Kayıt Ol
               </Button>
             </div>
           </div>
@@ -171,6 +230,52 @@ const HomePage = () => {
         </div>
         <div className="absolute bottom-20 left-20 opacity-20 bee-float" style={{animationDelay: '2s'}}>
           <div className="text-5xl">🌻</div>
+        </div>
+      </section>
+
+      {/* Quick Access Section */}
+      <section className="py-16 px-4 bg-white/60 backdrop-blur-sm">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              🚀 Hızlı Erişim Bağlantıları
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Sistemimizdeki tüm sayfalara doğrudan erişim sağlayın
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {quickLinks.map((link, index) => (
+              <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+                <div className={`h-2 bg-gradient-to-r ${link.color}`}></div>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${link.color} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <link.icon className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-amber-700 transition-colors">
+                        {link.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {link.description}
+                      </p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => navigate(link.path)}
+                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 p-0 h-auto font-medium"
+                      >
+                        Sayfaya Git
+                        <ChevronRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
 
